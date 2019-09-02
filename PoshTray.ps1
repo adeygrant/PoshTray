@@ -25,6 +25,7 @@ $y = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea.Height - $height
         Title="PC Info"
         Height="$height" Width="$width"
         ResizeMode="NoResize"
+        ShowInTaskbar="False"
         WindowStartupLocation="Manual"
         Left="$x" Top="$y"
         >
@@ -320,6 +321,29 @@ function GetInfo {
         $tabNetwork_tbNetwork.Inlines.Add( "`n`r" )
     }
 
+}
+
+# Window events
+$Window.Add_Activated{
+    Write-Host 'Window is activated'
+}
+
+$Window.Add_Deactivated{
+    Write-Host 'Window has been deactivated'
+}
+
+$Window.Add_Closing{
+    Write-Host 'Window is closing...'
+    $notifyIcon.Visible = $false
+}
+
+$Window.Add_Closed{
+    Write-Host 'Window has been closed.'
+}
+
+#Notify Icon Event
+$notifyIcon.Add_Click{
+    DrawWindow
 }
 
 # Button Events
