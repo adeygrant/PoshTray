@@ -1,4 +1,5 @@
 # PoshTray
+https://img.shields.io/badge/License-MIT-yellow.svg
 ## Synopsis
 Systray app written in Powershell.
 ## Description
