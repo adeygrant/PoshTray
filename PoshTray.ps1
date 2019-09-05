@@ -32,43 +32,13 @@ $y = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea.Height - $height
     <Grid Name="theGrid" Visibility="Visible">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" MinHeight="300"/>
+            <RowDefinition Height="Auto" MinHeight="300" MaxHeight="300"/>
             <RowDefinition Height="Auto"  />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions></Grid.ColumnDefinitions>
         <Menu Grid.Row="0" Grid.Column="0" >
             <MenuItem Header="_File" ><MenuItem Name="btnExit" Header="_Exit"></MenuItem></MenuItem>
-            <MenuItem Header="_Overlay" >
-                <MenuItem Header="Show on desktop" IsCheckable="True" IsChecked="True" Margin="0,0,-30,0" ></MenuItem>
-            </MenuItem>
-            <MenuItem Header="_Help"><MenuItem Name="btnAbout" Header="About"></MenuItem>
-            </MenuItem>
         </Menu>
-        <Label  Name="lblAbout"
-                Visibility="Collapsed"
-                HorizontalContentAlignment="Center"
-                Grid.Row="1"
-                Grid.Column="0"
-                Margin="0 115 0 0">
-                github.com/adeygrant
-        </Label>
-        <Label  Name="lblAbout2"
-                Visibility="Collapsed"
-                HorizontalContentAlignment="Center"
-                Grid.Row="1"
-                Grid.Column="0"
-                Margin="0 130 0 0">
-                Adrian Grant
-        </Label>
-        <Button Name="btnAboutClose" 
-                Visibility="Collapsed"
-                HorizontalContentAlignment="Center"
-                Width="85" 
-                Height="25"
-                Content="Close"
-                Grid.Row="2"
-                Grid.Column="0"
-        />
         <TabControl Name="tabControl" Grid.Row="1" Grid.Column="0" Margin="5 5 5 5" Visibility="Visible">
             <TabItem Name="Overview" Header="Overview">
                 <StackPanel Orientation="Vertical" Margin="5 5 5 5">
@@ -96,14 +66,18 @@ $y = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea.Height - $height
                 </StackPanel>
             </TabItem>
             <TabItem Name="Display" Header="Display">
-                <StackPanel Orientation="Vertical" Margin="5 5 5 5">
-                    <TextBlock Name="tabDisplay_tbDisplay"></TextBlock>
-                </StackPanel>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Height="232">
+                    <StackPanel Orientation="Vertical" Margin="5 5 5 5">
+                        <TextBlock Name="tabDisplay_tbDisplay"></TextBlock>
+                    </StackPanel>
+                </ScrollViewer>
             </TabItem>
             <TabItem Name="Network" Header="Network">
-                <StackPanel Orientation="Vertical" Margin="5 5 5 5">
-                    <TextBlock Name="tabNetwork_tbNetwork"></TextBlock>
-                </StackPanel>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" Height="232">
+                    <StackPanel Orientation="Vertical" Margin="5 5 5 5">
+                        <TextBlock Name="tabNetwork_tbNetwork"></TextBlock>
+                    </StackPanel>
+                </ScrollViewer>
             </TabItem>
         </TabControl>
         <Button Name="btnCopyCurrent"
@@ -221,33 +195,22 @@ $reader = (New-Object System.Xml.XmlNodeReader $xaml)
 $Window = [Windows.Markup.XamlReader]::Load($reader)
 $xaml.SelectNodes("//*[@Name]") | ForEach-Object { Set-Variable -Name ($_.Name) -Value $Window.FindName($_.Name) }
 
-# Set Icon.
-$Window.Icon            = $icon
-
 # Notify Icon
 $notifyIcon             = New-Object System.Windows.Forms.NotifyIcon
 $notifyIcon.Text        = $Window.Title
 $notifyIcon.Icon        = $icon
 $notifyIcon.Visible     = $true
-# Contect menu
-$ContextMenu            = New-Object System.Windows.Forms.ContextMenu
-$NotifyIcon.ContextMenu = $ContextMenu
+
+# Window Icon.
+$Window.Icon = $bitmap
+
+# Context menu
+$contextMenu            = New-Object System.Windows.Forms.ContextMenu
+$NotifyIcon.ContextMenu = $contextMenu
 # Menu Item
 $exitButton             = New-Object System.Windows.Forms.MenuItem
 $exitButton.Text        = "Exit"
-$notifyIcon.ContextMenu.MenuItems.AddRange($ExitButton)
-
-# Functions
-function DrawWindow {
-    # This needs to be $Window.Show()?
-    $Window.ShowDialog()
-    # $Window.Show()
-}
-
-function CloseWindow {
-    $notifyIcon.Visible = $false
-    $Window.Close()
-}
+$notifyIcon.ContextMenu.MenuItems.AddRange($exitButton)
 
 function GetInfo {
     # Retrive values. This needs adding as an onload when clicked or something.
@@ -323,54 +286,63 @@ function GetInfo {
 
 }
 
+# Functions
+function LoadWindow{
+    Write-Host 'Function LoadWindow'
+}
+function DrawWindow {
+    # This needs to be $Window.Show()?
+    # $Window.ShowDialog()
+    Write-Host 'Function DrawWindow'
+    $Window.Show()
+    GetInfo
+}
+
+function CloseWindow {
+    Write-Host 'Function CloseWindow'
+    $notifyIcon.Visible = $false
+    $Window.Close()
+    Stop-Process $pid
+}
+
 # Window events
+$Window.Add_ContentRendered{
+    Write-Host 'Add_ContentRendering'
+}
+
 $Window.Add_Activated{
-    Write-Host 'Window is activated'
+    Write-Host 'Add_Activated'
 }
 
 $Window.Add_Deactivated{
-    Write-Host 'Window has been deactivated'
+    Write-Host 'Add_Deactivated'
 }
 
 $Window.Add_Closing{
-    Write-Host 'Window is closing...'
+    Write-Host 'Add_Closing'
     $notifyIcon.Visible = $false
 }
 
 $Window.Add_Closed{
-    Write-Host 'Window has been closed.'
+    Write-Host 'Add_Closed...'
+    CloseWindow
 }
 
 #Notify Icon Event
 $notifyIcon.Add_Click{
+    Write-Host 'notify icon clicked'
     DrawWindow
 }
 
 # Button Events
 $btnExit.Add_Click{
+    Write-Host 'file exit button clicked'
     CloseWindow
 }
 
-$ExitButton.Add_Click{
+$exitButton.Add_Click{
+    Write-Host 'notify exit button clicked'
     CloseWindow
-}
-
-$btnAbout.Add_Click{
-    $tabControl.Visibility      = "Collapsed"
-    $btnCopyCurrent.Visibility  = "Collapsed"
-    $btnCopyAll.Visibility      = "Collapsed"
-    $lblAbout.Visibility        = "Visible"
-    $lblAbout2.Visibility       = "Visible"
-    $btnAboutClose.Visibility   = "Visible"
-}
-
-$btnAboutClose.Add_Click{
-    $tabControl.Visibility      = "Visible"
-    $btnCopyCurrent.Visibility  = "Visible"
-    $btnCopyAll.Visibility      = "Visible"
-    $lblAbout.Visibility        = "Collapsed"
-    $lblAbout2.Visibility       = "Collapsed"
-    $btnAboutClose.Visibility   = "Collapsed"
 }
 
 $btnCopyCurrent.Add_Click{
@@ -380,7 +352,14 @@ $btnCopyCurrent.Add_Click{
 
 $btnCopyAll.Add_Click{
     Write-Host "btnCopyAll clicked"
+    $tabOverview_tbOverview.Inlines.Add( "`ntest motherfucker" )
 }
 
-GetInfo
-DrawWindow
+# Garbage collector.
+[System.GC]::Collect()
+
+# Create an application context.
+$AppContext = New-Object System.Windows.Forms.ApplicationContext
+[void][System.Windows.Forms.Application]::Run($AppContext)
+
+LoadWindow
