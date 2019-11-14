@@ -1,9 +1,18 @@
-<# 
+<#
+    .Synopsis
+    Systray app written in Powershell.
+    .Description
+    System Information app written in Powershell.
+    Collects information using Get-CimInstance.
+    WPF for the main GUI & Win Forms for a notify icon.
     .Notes
-    Simple systray app template.
+    to do:
+    Try to fix the extra whitespace on the foreach loop.
+    Add an about section?
+    Add a loading bar?
 #>
 
-#Import assemblies
+# Import assemblies
 Add-Type -AssemblyName  WindowsBase,
                         System.Windows.Forms,
                         PresentationFramework,
@@ -22,7 +31,7 @@ $y = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea.Height - $height
 <Window
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         Name="Window"
-        Title="PC Info"
+        Title="PoshTray | System Information"
         Height="$height" Width="$width"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
@@ -42,40 +51,40 @@ $y = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea.Height - $height
         <TabControl Name="tabControl" Grid.Row="1" Grid.Column="0" Margin="5 5 5 5" Visibility="Visible">
             <TabItem Name="Overview" Header="Overview">
                 <StackPanel Orientation="Vertical" Margin="5 5 5 5">
-                    <TextBlock Name="tabOverview_tbOverview"></TextBlock>
+                    <TextBlock Name="tbOverview"></TextBlock>
                 </StackPanel>
             </TabItem>
             <TabItem Name="Computer" Header="Computer">
                 <StackPanel Orientation="Vertical" Margin="5 5 5 5">
-                    <TextBlock Name="tabComputer_tbComputer"></TextBlock>
+                    <TextBlock Name="tbComputer"></TextBlock>
                 </StackPanel>
             </TabItem>
             <TabItem Name="Disks" Header="Disks">
                 <StackPanel Orientation="Vertical" Margin="5 5 5 5">
-                    <TextBlock Name="tabDisks_tbDisks"></TextBlock>
+                    <TextBlock Name="tbDisks"></TextBlock>
                 </StackPanel>
             </TabItem>
             <TabItem Name="OS" Header="OS">
                 <StackPanel Orientation="Vertical" Margin="5 5 5 5">
-                    <TextBlock Name="tabOS_tbOS"></TextBlock>
+                    <TextBlock Name="tbOS"></TextBlock>
                 </StackPanel>
             </TabItem>
             <TabItem Name="Hardware" Header="Hardware">
                 <StackPanel Orientation="Vertical" Margin="5 5 5 5">
-                    <TextBlock Name="tabHardware_tbHardware"></TextBlock>
+                    <TextBlock Name="tbHardware"></TextBlock>
                 </StackPanel>
             </TabItem>
             <TabItem Name="Display" Header="Display">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Height="232">
                     <StackPanel Orientation="Vertical" Margin="5 5 5 5">
-                        <TextBlock Name="tabDisplay_tbDisplay"></TextBlock>
+                        <TextBlock Name="tbDisplay"></TextBlock>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
             <TabItem Name="Network" Header="Network">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" Height="232">
                     <StackPanel Orientation="Vertical" Margin="5 5 5 5">
-                        <TextBlock Name="tabNetwork_tbNetwork"></TextBlock>
+                        <TextBlock Name="tbNetwork"></TextBlock>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>
@@ -207,99 +216,94 @@ $Window.Icon = $bitmap
 # Context menu
 $contextMenu            = New-Object System.Windows.Forms.ContextMenu
 $NotifyIcon.ContextMenu = $contextMenu
+
 # Menu Item
 $exitButton             = New-Object System.Windows.Forms.MenuItem
 $exitButton.Text        = "Exit"
 $notifyIcon.ContextMenu.MenuItems.AddRange($exitButton)
 
-function GetInfo {
-    # Retrive values. This needs adding as an onload when clicked or something.
-    # Becuase we don't want it slowing down logon times.
+function Get-Info {
+    # Can we make this any quicker?
     $operatingSystem = Get-CimInstance -ClassName Win32_OperatingSystem
     $computerSystem  = Get-CimInstance -ClassName Win32_ComputerSystem
     $bios            = Get-CimInstance -ClassName Win32_BIOS
+    $cpu             = Get-CimInstance -ClassName Win32_Processor
     $logocalDisk     = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DeviceID = 'C:'"
     $diskDrive       = Get-CimInstance -ClassName Win32_DiskDrive | Select-Object 'Model', 'SerialNumber'
     $monitors        = Get-CimInstance -Namespace root\wmi -ClassName WmiMonitorId
-    $adapters        = Get-NetAdapter -Physical
-
-    # add some BIOS details on one of the tabs....
+    $adapters        = Get-NetAdapter -Physical    
 
     # Overview tab
-    $tabOverview_tbOverview.Inlines.Add( "Last boot: " + $operatingSystem.LastBootUpTime.DayOfWeek + " " + $operatingSystem.LastBootUpTime )
-    $tabOverview_tbOverview.Inlines.Add( "`nBIOS Name: " + $bios.Name )
-    $tabOverview_tbOverview.Inlines.Add( "`nSM BIOS Ver: " + $bios.SMBIOSBIOSVersion )
+    $tbOverview.Inlines.Add( "Last boot: " + $operatingSystem.LastBootUpTime.DayOfWeek + " " + $operatingSystem.LastBootUpTime )
+    $tbOverview.Inlines.Add( "`nBIOS Name: " + $bios.Name )
+    $tbOverview.Inlines.Add( "`nSM BIOS Ver: " + $bios.SMBIOSBIOSVersion )
+    $tbOverview.Inlines.Add( "`r")
 
     # Computer tab
-    $tabComputer_tbComputer.Inlines.Add( "Name: " + $computerSystem.Name )
-    $tabComputer_tbComputer.Inlines.Add( "`nManufacturer: " + $computerSystem.Manufacturer )
-    $tabComputer_tbComputer.Inlines.Add( "`nDomain: " + $computerSystem.Domain )
-    $tabComputer_tbComputer.Inlines.Add( "`nModel: " + $computerSystem.Model )
-    $tabComputer_tbComputer.Inlines.Add( "`nMemory: " + $([math]::Round($computerSystem.TotalPhysicalMemory/1GB)) + " GB" )
+    $tbComputer.Inlines.Add( "Name: " + $computerSystem.Name )
+    $tbComputer.Inlines.Add( "`nManufacturer: " + $computerSystem.Manufacturer )
+    $tbComputer.Inlines.Add( "`nDomain: " + $computerSystem.Domain )
+    $tbComputer.Inlines.Add( "`nModel: " + $computerSystem.Model )
+    $tbComputer.Inlines.Add( "`nMemory: " + $([math]::Round($computerSystem.TotalPhysicalMemory/1GB)) + " GB" )
+    $tbComputer.Inlines.Add( "`r")
 
     # OS tab
-    $tabOS_tbOS.Inlines.Add( $operatingSystem.Caption )
-    $tabOS_tbOS.Inlines.Add( "`nRelease: " + (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion" -Name ReleaseId).ReleaseId ) 
-    $tabOS_tbOS.Inlines.Add( "`nBuild number: " + $operatingSystem.BuildNumber ) 
-    $tabOS_tbOS.Inlines.Add( "`nArchitecture: " + $operatingSystem.OSArchitecture ) 
-    $tabOS_tbOS.Inlines.Add( "`nVersion: " + $operatingSystem.Version ) 
+    $tbOS.Inlines.Add( $operatingSystem.Caption )
+    $tbOS.Inlines.Add( "`nRelease: " + (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion" -Name ReleaseId).ReleaseId ) 
+    $tbOS.Inlines.Add( "`nBuild number: " + $operatingSystem.BuildNumber ) 
+    $tbOS.Inlines.Add( "`nArchitecture: " + $operatingSystem.OSArchitecture ) 
+    $tbOS.Inlines.Add( "`nVersion: " + $operatingSystem.Version )
+    $tbOS.Inlines.Add( "`r")
 
     # Hardware tab
-    # $tabHardware_tbHardware.Text = "Test: " + $
+    $tbHardware.Inlines.Add( "CPU: " + $cpu.Name )
     # $tabHardware_tbHardware.Inlines.Add( "`n " )
     # $tabHardware_tbHardware.Inlines.Add( "`n " )
     # $tabHardware_tbHardware.Inlines.Add( "`n " )
 
     # Disk tab
-    $tabDisks_tbDisks.Inlines.Add( "Model: " + $diskDrive.Model)
-    $tabDisks_tbDisks.Inlines.Add( "`nSN: " + $diskDrive.SerialNumber )
-    $tabDisks_tbDisks.Inlines.Add( "`nDrive Type: " + $logocalDisk.DriveType )
-    $tabDisks_tbDisks.Inlines.Add( "`nName: " + $logocalDisk.Name )
-    $tabDisks_tbDisks.Inlines.Add( "`nDescription: " + $logocalDisk.Description )
-    $tabDisks_tbDisks.Inlines.Add( "`nSize: " + [math]::Round($logocalDisk.Size / 1GB) + " GB")
-    $tabDisks_tbDisks.Inlines.Add( "`nFree space: " + [math]::Round($logocalDisk.FreeSpace / 1GB) + " GB" )
-    $tabDisks_tbDisks.Inlines.Add( "`nFile system: " + $logocalDisk.FileSystem)
+    $tbDisks.Inlines.Add( "Model: " + $diskDrive.Model)
+    $tbDisks.Inlines.Add( "`nSN: " + $diskDrive.SerialNumber )
+    $tbDisks.Inlines.Add( "`nDrive Type: " + $logocalDisk.DriveType )
+    $tbDisks.Inlines.Add( "`nName: " + $logocalDisk.Name )
+    $tbDisks.Inlines.Add( "`nDescription: " + $logocalDisk.Description )
+    $tbDisks.Inlines.Add( "`nSize: " + [math]::Round($logocalDisk.Size / 1GB) + " GB")
+    $tbDisks.Inlines.Add( "`nFree space: " + [math]::Round($logocalDisk.FreeSpace / 1GB) + " GB" )
+    $tbDisks.Inlines.Add( "`nFile system: " + $logocalDisk.FileSystem)
 
     # Display tab - For some reason - This doesn't work well with Set-Clipboard. Assume it's the -join bit
     foreach ($monitor in $monitors){
-        $tabDisplay_tbDisplay.Inlines.Add( "Manufacturer: " + $(($monitor.ManufacturerName | ForEach-Object { [CHAR]$_ }) -join ''))
-        $tabDisplay_tbDisplay.Inlines.Add( "`nModel: " + $(($monitor.UserFriendlyName | ForEach-Object { [CHAR]$_ }) -join ''))
-        $tabDisplay_tbDisplay.Inlines.Add( "`nProduct code: " + $(($monitor.ProductCodeID | ForEach-Object { [CHAR]$_ }) -join ''))
-        $tabDisplay_tbDisplay.Inlines.Add( "`nSN: " + $(($monitor.SerialNumberID | ForEach-Object { [CHAR]$_ }) -join ''))
-        $tabDisplay_tbDisplay.Inlines.Add( "`nManufacture month: " + $monitor.YearOfManufacture )
-        $tabDisplay_tbDisplay.Inlines.Add( "`nManufacture week: " + $monitor.WeekOfManufacture)
-        $tabDisplay_tbDisplay.Inlines.Add( "`n`r" )
+        $tbDisplay.Inlines.Add( "Manufacturer: " + $(($monitor.ManufacturerName | ForEach-Object { [CHAR]$_ }) -join ''))
+        $tbDisplay.Inlines.Add( "`nModel: " + $(($monitor.UserFriendlyName | ForEach-Object { [CHAR]$_ }) -join ''))
+        $tbDisplay.Inlines.Add( "`nProduct code: " + $(($monitor.ProductCodeID | ForEach-Object { [CHAR]$_ }) -join ''))
+        $tbDisplay.Inlines.Add( "`nSN: " + $(($monitor.SerialNumberID | ForEach-Object { [CHAR]$_ }) -join ''))
+        $tbDisplay.Inlines.Add( "`nManufacture month: " + $monitor.YearOfManufacture )
+        $tbDisplay.Inlines.Add( "`nManufacture week: " + $monitor.WeekOfManufacture)
+        $tbDisplay.Inlines.Add( "`n`r")
     }
 
     # Network tab
     foreach ($adapter in $adapters){
-        $tabNetwork_tbNetwork.Inlines.Add( $adapter.InterfaceDescription )
-        $tabNetwork_tbNetwork.Inlines.Add( "`nName: " + $adapter.Name )
-        $tabNetwork_tbNetwork.Inlines.Add( "`nIPv4 Address: " + $($adapter | Get-NetIPAddress | Where-Object -FilterScript { $_.AddressFamily -eq 'IPv4' } | Select-Object -ExpandProperty 'IPAddress' ) )
-        $tabNetwork_tbNetwork.Inlines.Add( "`nMac addr: " + $adapter.MacAddress )
-        $tabNetwork_tbNetwork.Inlines.Add( "`nStatus: " + $adapter.Status )
-        $tabNetwork_tbNetwork.Inlines.Add( "`nMediaType: " + $adapter.MediaType )
-        $tabNetwork_tbNetwork.Inlines.Add( "`nConnection Status: " + $adapter.MediaConnectionState )
-        $tabNetwork_tbNetwork.Inlines.Add( "`nDriver version: " + $adapter.DriverVersion )
-        $tabNetwork_tbNetwork.Inlines.Add( "`n`r" )
-    }
+        $tbNetwork.Inlines.Add( $adapter.InterfaceDescription )
+        $tbNetwork.Inlines.Add( "`nName: " + $adapter.Name )
+        $tbNetwork.Inlines.Add( "`nIPv4 Address: " + $($adapter | Get-NetIPAddress | Where-Object -FilterScript { $_.AddressFamily -eq 'IPv4' } | Select-Object -ExpandProperty 'IPAddress' ) )
+        $tbNetwork.Inlines.Add( "`nMac addr: " + $adapter.MacAddress )
+        $tbNetwork.Inlines.Add( "`nStatus: " + $adapter.Status )
+        $tbNetwork.Inlines.Add( "`nMediaType: " + $adapter.MediaType )
+        $tbNetwork.Inlines.Add( "`nConnection Status: " + $adapter.MediaConnectionState )
+        $tbNetwork.Inlines.Add( "`nDriver version: " + $adapter.DriverVersion )
+        $tbNetwork.Inlines.Add( "`n`r")
+    }    
 
 }
 
 # Functions
-function LoadWindow{
-    Write-Host 'Function LoadWindow'
-}
 function DrawWindow {
-    # This needs to be $Window.Show()?
-    # $Window.ShowDialog()
-    Write-Host 'Function DrawWindow'
     $Window.Show()
-    GetInfo
+    $Window.Activate()
 }
 
 function CloseWindow {
-    Write-Host 'Function CloseWindow'
     $notifyIcon.Visible = $false
     $Window.Close()
     Stop-Process $pid
@@ -307,52 +311,47 @@ function CloseWindow {
 
 # Window events
 $Window.Add_ContentRendered{
-    Write-Host 'Add_ContentRendering'
-}
-
-$Window.Add_Activated{
-    Write-Host 'Add_Activated'
+    Get-Info
 }
 
 $Window.Add_Deactivated{
-    Write-Host 'Add_Deactivated'
+    $Window.Hide()
 }
 
 $Window.Add_Closing{
-    Write-Host 'Add_Closing'
-    $notifyIcon.Visible = $false
+    $_.Cancel = $true
+    $Window.Hide()
 }
 
 $Window.Add_Closed{
-    Write-Host 'Add_Closed...'
     CloseWindow
 }
 
 #Notify Icon Event
 $notifyIcon.Add_Click{
-    Write-Host 'notify icon clicked'
     DrawWindow
 }
 
 # Button Events
 $btnExit.Add_Click{
-    Write-Host 'file exit button clicked'
     CloseWindow
 }
 
 $exitButton.Add_Click{
-    Write-Host 'notify exit button clicked'
     CloseWindow
 }
 
 $btnCopyCurrent.Add_Click{
-    $currentTab = Get-Variable -Include "*tb$($tabControl.SelectedItem.Name)" -ValueOnly
-    $currentTab.Text | Set-Clipboard
+    $tabName = $tabControl.SelectedItem.Name
+    $textblock = Get-Variable -Include "tb$tabName" -ValueOnly
+    $textblock.Text | Set-Clipboard
 }
 
 $btnCopyAll.Add_Click{
-    Write-Host "btnCopyAll clicked"
-    $tabOverview_tbOverview.Inlines.Add( "`ntest motherfucker" )
+    $textblocks = Get-Variable -Include "tb*" -ValueOnly
+    foreach ($textblock in $textblocks){
+        $textblock.Text | Set-Clipboard -Append
+    }
 }
 
 # Garbage collector.
@@ -361,5 +360,3 @@ $btnCopyAll.Add_Click{
 # Create an application context.
 $AppContext = New-Object System.Windows.Forms.ApplicationContext
 [void][System.Windows.Forms.Application]::Run($AppContext)
-
-LoadWindow
